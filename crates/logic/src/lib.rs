@@ -7,8 +7,10 @@ use bevy::{prelude::*, tasks::IoTaskPool};
 use bevy_ggrs::*;
 use ggrs::{GameState, SessionState};
 use matchbox_socket::WebRtcNonBlockingSocket;
+use wasm_bindgen::prelude::wasm_bindgen;
 
-fn main() {
+#[wasm_bindgen]
+pub fn run() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.53, 0.53, 0.53)))
         .insert_resource(logic::RoundState::NotReady)
