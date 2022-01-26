@@ -1,12 +1,11 @@
+mod display;
 mod input;
 mod logic;
 mod network;
 
-use crate::input::INPUT_SIZE;
-use bevy::{prelude::*, tasks::IoTaskPool};
+use bevy::prelude::*;
 use bevy_ggrs::*;
-use ggrs::{GameState, SessionState};
-use matchbox_socket::WebRtcNonBlockingSocket;
+use display::DisplayPlugin;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[wasm_bindgen]
@@ -16,6 +15,7 @@ pub fn run() {
         .insert_resource(logic::RoundState::NotReady)
         .add_plugins(DefaultPlugins)
         .add_plugin(GGRSPlugin)
+        .add_plugin(DisplayPlugin)
         .with_input_system(input::input)
         .add_startup_system(logic::setup)
         .add_startup_system(logic::spawn_players)
