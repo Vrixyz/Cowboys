@@ -34,7 +34,7 @@ jobs:
           override: true
       - uses: jetli/wasm-pack-action@v0.3.0
       - run: cargo install --force cargo-make
-      - run: cargo make webr
+      - run: cargo make build-webr
       - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
