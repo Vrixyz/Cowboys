@@ -1,9 +1,17 @@
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = "true"
 
+[tasks.copy-assets]
+workspace = false
+env = { "CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS" = ["logic"] }
+script = '''
+cp -R crates/logic/assets crates/web/public
+'''
+
 [tasks.build-webd]
 workspace = false
 env = { "CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS" = ["logic"] }
+dependencies = ["copy-assets"]
 script = '''
 cd crates/logic && wasm-pack build --target web -d ../web/public/pkg
 '''
@@ -11,22 +19,23 @@ cd crates/logic && wasm-pack build --target web -d ../web/public/pkg
 [tasks.build-webr]
 workspace = false
 env = { "CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS" = ["logic"] }
+dependencies = ["copy-assets"]
 script = '''
 cd crates/logic && wasm-pack build --release --target web -d ../web/public/pkg
+'''
+
+[tasks.run-web]
+workspace = false
+script = '''
+cd crates/web && cargo run
 '''
 
 [tasks.webd]
 workspace = false
 env = { "CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS" = ["web"], CARGO_MAKE_SCRIPT_FORCE_PIPE_STDIN = true }
-dependencies = ["build-webd"]
-script = '''
-cd crates/web && cargo run
-'''
+dependencies = ["build-webd", "run-web"]
 
 [tasks.webr]
 workspace = false
 env = { "CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS" = ["web"], CARGO_MAKE_SCRIPT_FORCE_PIPE_STDIN = true }
-dependencies = ["build-webr"]
-script = '''
-cd crates/web && cargo run --release
-'''
+dependencies = ["build-webr", "run-web"]

@@ -1,4 +1,5 @@
 use crate::input::INPUT_SIZE;
+use crate::states::GameState;
 use bevy::prelude::*;
 use bevy::tasks::IoTaskPool;
 use bevy_ggrs::CommandsExt;
@@ -21,6 +22,7 @@ pub(crate) fn start_matchbox_socket(mut commands: Commands, task_pool: Res<IoTas
 pub(crate) fn wait_for_players(
     mut commands: Commands,
     mut socket: ResMut<Option<WebRtcNonBlockingSocket>>,
+    mut state: ResMut<State<GameState>>,
 ) {
     let socket = socket.as_mut();
 
@@ -63,4 +65,6 @@ pub(crate) fn wait_for_players(
 
     // start the GGRS session
     commands.start_p2p_session(p2p_session);
+
+    state.set(GameState::InGame).unwrap();
 }

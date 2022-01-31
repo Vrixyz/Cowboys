@@ -35,9 +35,17 @@ pub(crate) struct Ammunition {
     pub(crate) amount: i32,
 }
 
+#[derive(Clone, Copy)]
+pub struct RoundWait {
+    pub from: Frame,
+    pub until: Frame,
+}
+
+#[derive(Clone, Copy)]
 pub(crate) enum RoundState {
     NotReady,
-    WaitUntil(Frame),
+    WaitUntil(RoundWait),
+    DisplayUntil(RoundWait),
     Compute,
     NextRound,
 }
@@ -53,38 +61,22 @@ pub(crate) fn setup(mut commands: Commands) {
 pub(crate) fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
     // Player 1
     commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0., 2., 0.)),
-            sprite: Sprite {
-                color: Color::rgb(0., 0.47, 1.),
-                custom_size: Some(Vec2::new(1., 1.)),
-                ..Default::default()
-            },
-            ..Default::default()
-        })
+        .spawn()
         .insert(Player { handle: 0 })
         .insert(Rollback::new(rip.next_id()))
         .insert(ActionFire::default())
-        .insert(ActionReload::default())
+        .insert(ActionReload { is_active: true })
         .insert(ActionShield::default())
         .insert(Health { amount: 3 })
         .insert(Ammunition::default());
 
     // Player 2
     commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0., -2., 0.)),
-            sprite: Sprite {
-                color: Color::rgb(0., 0.4, 0.),
-                custom_size: Some(Vec2::new(1., 1.)),
-                ..Default::default()
-            },
-            ..Default::default()
-        })
+        .spawn()
         .insert(Player { handle: 1 })
         .insert(Rollback::new(rip.next_id()))
         .insert(ActionFire::default())
-        .insert(ActionReload::default())
+        .insert(ActionReload { is_active: true })
         .insert(ActionShield::default())
         .insert(Health { amount: 3 })
         .insert(Ammunition::default());
@@ -96,13 +88,36 @@ pub(crate) fn update_round(world: &mut World) {
         dbg!(frame);
         if let Some(mut round_state) = world.get_resource_mut::<RoundState>() {
             if matches!(*round_state, RoundState::NotReady) {
-                *round_state = RoundState::WaitUntil(frame + 60 * 2)
+                *round_state = RoundState::WaitUntil(RoundWait {
+                    from: frame,
+                    until: frame + 60 * 2,
+                })
             }
-            if let RoundState::WaitUntil(end_time) = *round_state {
-                if end_time <= frame {
-                    *round_state = RoundState::Compute;
-                    info!("round compute");
+            *round_state = match *round_state {
+                RoundState::NotReady => RoundState::WaitUntil(RoundWait {
+                    from: frame,
+                    until: frame + 60 * 2,
+                }),
+                RoundState::WaitUntil(wait) => {
+                    if wait.until <= frame {
+                        info!("displayUntil");
+                        RoundState::DisplayUntil(RoundWait {
+                            from: frame,
+                            until: frame + 60 * 1,
+                        })
+                    } else {
+                        *round_state
+                    }
                 }
+                RoundState::DisplayUntil(wait) => {
+                    if wait.until <= frame {
+                        info!("round compute");
+                        RoundState::Compute
+                    } else {
+                        *round_state
+                    }
+                }
+                _ => *round_state,
             }
         }
     } else if let Some(mut round_state) = world.get_resource_mut::<RoundState>() {
@@ -165,7 +180,10 @@ pub(crate) fn react_end_round(world: &mut World) {
         let frame = world.get_resource::<P2PSession>().unwrap().current_frame();
         if let Some(mut round_state) = world.get_resource_mut::<RoundState>() {
             if matches!(*round_state, RoundState::NextRound) {
-                *round_state = RoundState::WaitUntil(frame + 60 * 2);
+                *round_state = RoundState::WaitUntil(RoundWait {
+                    from: frame,
+                    until: frame + 60 * 2,
+                });
                 info!("round wait");
             }
         }
